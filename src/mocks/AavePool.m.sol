@@ -98,8 +98,8 @@ contract PoolMock {
         require(borrowableAmount > 0, "Negative");
         require(amount <= borrowableAmount, "You have no borrowable");
         
-        users[onBehalfOf].debt += amount;
-        IERC20(asset).transfer(onBehalfOf, amount);
+        users[onBehalfOf].debt += toBaseAsset(asset, amount);
+        IERC20(asset).transfer(onBehalfOf, toBaseAsset(asset, amount));
 
     }
 
@@ -113,7 +113,7 @@ contract PoolMock {
         require(IERC20(asset).allowance(onBehalfOf, address(this)) >= amount, "Not allowed");
         require(amount <= users[onBehalfOf].debt, "Wanna spend too much manei");
         IERC20(asset).transferFrom(onBehalfOf, address(this), amount);
-        users[onBehalfOf].debt -= amount;
+        users[onBehalfOf].debt -= toBaseAsset(asset, amount);
 
     }
 }

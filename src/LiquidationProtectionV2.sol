@@ -19,6 +19,7 @@ contract LiquidationProtectionV2 is Ownable {
     }
 
     HF_PARAMS public hfParams;
+    uint256 public constant MULTIPLIER = 1e18;
 
     //Assets
     address[] assets;
@@ -120,7 +121,7 @@ contract LiquidationProtectionV2 is Ownable {
         //1. get current collateral amount deposited and current debt
         (uint256 currentCollateralBaseAsset, uint256 currentDebtBaseAsset, , , ,) = aavePool.getUserAccountData(address(this));
         //4. calculate withdrawable collateral
-        uint256 withdrawableCollateralBaseAsset = currentCollateralBaseAsset - currentDebtBaseAsset * hfParams.lower;
+        uint256 withdrawableCollateralBaseAsset = currentCollateralBaseAsset - currentDebtBaseAsset * hfParams.lower / MULTIPLIER;
         //5. calculate amounts from base assets
         uint256 withdrawableCollateral = _calculateAmountFromBaseAsset(collateral, withdrawableCollateralBaseAsset);
         //6. take min(amount, widthdrawable)
@@ -137,7 +138,7 @@ contract LiquidationProtectionV2 is Ownable {
         (uint256 currentCollateralBaseAsset, uint256 currentDebtBaseAsset, , , ,) = aavePool.getUserAccountData(address(this));
 
         //calculate borrowable amount
-        uint256 availableDebtBaseAsset = currentCollateralBaseAsset / hfParams.target - currentDebtBaseAsset;
+        uint256 availableDebtBaseAsset = currentCollateralBaseAsset * MULTIPLIER / hfParams.target - currentDebtBaseAsset;
         uint256 availableDebt = _calculateAmountFromBaseAsset(debtAsset, availableDebtBaseAsset);
         //borrow
         aavePool.borrow(debtAsset, availableDebt, 1, 0, address(this));
@@ -152,7 +153,7 @@ contract LiquidationProtectionV2 is Ownable {
     function repayDebt() public onlyOwnerOrAgent {
         address debtAsset = assets[1];
         (uint256 currentCollateralBaseAsset, uint256 currentDebtBaseAsset, , , ,) = aavePool.getUserAccountData(address(this));
-        uint256 repayableDebtBaseAsset = currentDebtBaseAsset - currentCollateralBaseAsset / hfParams.target;
+        uint256 repayableDebtBaseAsset = currentDebtBaseAsset - currentCollateralBaseAsset * MULTIPLIER / hfParams.target;
         uint256 repayableDebt = _calculateAmountFromBaseAsset(debtAsset, repayableDebtBaseAsset);
 
         IERC20 debtAssetToken = IERC20(debtAsset);
@@ -191,6 +192,10 @@ contract LiquidationProtectionV2 is Ownable {
 
 
     // GETTERS AND QUOTERS
+
+    function calculateAmountFromBaseAsset(address asset_, uint256 amount_) public view returns(uint256) {
+        return _calculateAmountFromBaseAsset(asset_, amount_);
+    }
 
     //amount_ in aave base asset
     function _calculateAmountFromBaseAsset(address asset_, uint256 amount_) internal view returns(uint256) {

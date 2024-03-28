@@ -12,8 +12,6 @@ import "lib/forge-std/src/console.sol";
 import "lib/aave-v3-core/contracts/interfaces/IPool.sol";
 import "lib/aave-v3-core/contracts/interfaces/IAaveOracle.sol";
 
-// import {Test, console} from "forge-std/Test.sol";
-// import {Counter} from "../src/Counter.sol";
 
 contract PoolTest is Test {
 
@@ -69,21 +67,19 @@ contract PoolTest is Test {
         assertEq(exists, true);
     }
 
-    // TODO: TODO
-    // function test_Withdraw() public {
-    //     vm.prank(actor);
-    //     //let TOKEN1 be collateral for TOKEN2
-    //     TOKEN1.approve(address(Pool), type(uint256).max);
-    //     vm.prank(strategy);
-    //     Pool.deposit(address(TOKEN1), 5e18, actor, 0);
-    //     (,,bool exists) = Pool.users(actor);
-    //     assertEq(exists, true);
-    //     assertEq(TOKEN1.balanceOf(actor), 1e20-5e18);
-    //     vm.prank(strategy);
-    //     Pool.withdraw(address(TOKEN1), 5e18, actor);
-    //     assertEq(TOKEN1.balanceOf(actor), 1e20);
 
-    // }
+    function test_Withdraw() public {
+        vm.startPrank(actor);
+        //let TOKEN1 be collateral for TOKEN2
+        TOKEN1.approve(address(Pool), type(uint256).max);
+        Pool.deposit(address(TOKEN1), 5e18, actor, 0);
+        (,,bool exists) = Pool.users(actor);
+        assertEq(exists, true);
+        assertEq(TOKEN1.balanceOf(actor), 1e20-5e18);
+        Pool.withdraw(address(TOKEN1), 5e18, actor);
+        assertEq(TOKEN1.balanceOf(actor), 1e20);
+        vm.stopPrank();
+    }
 
     function deposit(
         address strategy_,
@@ -97,17 +93,17 @@ contract PoolTest is Test {
     }
 
     function test_Borrow() public {
-        vm.startPrank(strategy);
-        deposit(strategy, 5e18);
+        vm.startPrank(actor);
+        deposit(actor, 5e18);
         Pool.borrow(
             address(TOKEN1),
             1e18,
             1,
             0,
-            strategy
+            actor
         );
 
-        (uint256 collateral, uint256 debt, bool exists) = Pool.users(strategy);
+        (uint256 collateral, uint256 debt, bool exists) = Pool.users(actor);
 
         assertEq(exists, true);
         assertEq(collateral, 5e18);
@@ -122,9 +118,9 @@ contract PoolTest is Test {
             address(TOKEN1),
             1e18,
             1,
-            strategy);
+            actor);
 
-        (uint256 collateral, uint256 debt, bool exists) = Pool.users(strategy);
+        (uint256 collateral, uint256 debt, bool exists) = Pool.users(actor);
         assertEq(exists, true);
         assertEq(collateral, 5e18);
         assertEq(debt, 0);
